@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chatbot</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f3f4f6;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    nav {
+      background-color: #ffffff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      padding: 15px;
+      position: fixed;
+      top: 0;
+      width: 100%;
+      z-index: 10;
+      text-align: center;
+      border-bottom: 1px solid #ddd;
+    }
+    nav a {
+      text-decoration: none;
+      color: black;
+      font-weight: 500;
+    }
+
+    #chat-container {
+      flex: 1;
+      padding: 80px 16px 100px;
+      overflow-y: auto;
+      display: flex;
+      justify-content: center;
+    }
+
+    #chat-container > div {
+      width: 100%;
+      max-width: 640px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    form {
+      padding: 16px;
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      background-color: #fff;
+      box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+      display: flex;
+      justify-content: center;
+    }
+
+    .chat-input-container {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      max-width: 640px;
+      border: 1px solid #d1d5db;
+      background-color: #f9fafb;
+      border-radius: 9999px;
+      padding: 8px 16px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    .chat-input-container input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      outline: none;
+      color: #374151;
+      font-size: 16px;
+    }
+
+    .chat-input-container button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #7890c1;
+      font-size: 20px;
+    }
+
+    .message {
+      padding: 12px 16px;
+      margin: 8px 0;
+      border-radius: 20px;
+      font-size: 16px;
+      max-width: 100%;
+      animation: fadeIn 0.3s ease-in-out;
+      white-space: pre-wrap;
+      position: relative;
+    }
+
+    .user-message {
+      background-color: #ffffff;
+      color: rgb(0, 0, 0);
+      align-self: flex-end;
+    }
+
+    .bot-message {
+      
+      color: #1f2937;
+      align-self: flex-start;
+    }
+
+    .typing {
+      font-style: italic;
+      color: #6b7280;
+    }
+
+    .copy-btn {
+      display: block;
+      margin-top: 8px;
+      background: #d1d5db;
+      border: none;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      width: fit-content;
+    }
+
+    .copy-btn:hover {
+      background: #c0c4c8;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    pre {
+      background-color: #1e1e1e;
+      color: #d4d4d4;
+      padding: 10px;
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+
+    strong {
+      font-weight: bold;
+    }
+
+    em {
+      font-style: italic;
+    }
+
+    code {
+      background-color: #eee;
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+
+  <nav><a href="#">Chatbot</a></nav>
+
+  <div id="chat-container">
+    <div id="chat-box"></div>
+  </div>
+
+  <form id="chat-form" method="post">
+    {% csrf_token %}
+    <div class="chat-input-container">
+      <button type="button" id="voice-btn" aria-label="Voice input">🎤</button>
+      <input type="text" id="message-input" name="message" placeholder="Type a message..." required />
+      <button type="submit" aria-label="Send message">➤</button>
+    </div>
+  </form>
+
+  <script>
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    const form = document.getElementById("chat-form");
+    const input = document.getElementById("message-input");
+    const container = document.getElementById("chat-box");
+
+    function formatBotResponse(text) {
+      return text
+        .replace(/```([^`]*)```/g, (_, code) => `<pre>${code.trim()}</pre>`)
+        .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+        .replace(/\*(.*?)\*/g, "<em>$1</em>")
+        .replace(/`([^`]+)`/g, "<code>$1</code>");
+    }
+
+    function appendMessage(text, isUser = true) {
+      const bubble = document.createElement("div");
+      bubble.className = `message ${isUser ? "user-message" : "bot-message"}`;
+
+      if (isUser) {
+        bubble.textContent = text;
+      } else {
+        const responseHTML = document.createElement("div");
+        responseHTML.innerHTML = formatBotResponse(text);
+
+        const copyBtn = document.createElement("button");
+        copyBtn.className = "copy-btn";
+        copyBtn.textContent = "Copy";
+        copyBtn.onclick = () => {
+          navigator.clipboard.writeText(text);
+          copyBtn.textContent = "Copied!";
+          setTimeout(() => copyBtn.textContent = "Copy", 1500);
+        };
+
+        bubble.appendChild(responseHTML);
+        bubble.appendChild(copyBtn);
+      }
+
+      container.appendChild(bubble);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const message = input.value.trim();
+      if (!message) return;
+
+      appendMessage(message, true);
+      input.value = "";
+
+      const typingBubble = document.createElement("div");
+      typingBubble.className = "message typing bot-message";
+      typingBubble.textContent = "Bot is typing";
+      container.appendChild(typingBubble);
+      container.scrollTop = container.scrollHeight;
+
+      let dots = 0;
+      const typingInterval = setInterval(() => {
+        typingBubble.textContent = "Bot is typing" + ".".repeat(dots % 4);
+        dots++;
+      }, 500);
+
+      let timeoutReached = false;
+      const timeout = setTimeout(() => {
+        timeoutReached = true;
+        clearInterval(typingInterval);
+        container.removeChild(typingBubble);
+        appendMessage("Error occurred: Request timed out.", false);
+      }, 25000);
+
+      try {
+        const res = await fetch("/chat/res/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-CSRFToken": csrftoken,
+          },
+          body: new URLSearchParams({ message }),
+        });
+
+        if (timeoutReached) return;
+
+        clearInterval(typingInterval);
+        clearTimeout(timeout);
+        container.removeChild(typingBubble);
+
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        const data = await res.json();
+        appendMessage(data.response || "No response", false);
+      } catch (error) {
+        console.error("Fetch error:", error);
+        clearInterval(typingInterval);
+        clearTimeout(timeout);
+        if (!timeoutReached) {
+          container.removeChild(typingBubble);
+          appendMessage("Error occurred", false);
+        }
+      }
+    });
+
+    // Voice to text
+    const voiceBtn = document.getElementById("voice-btn");
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const mic = new SpeechRecognition();
+      mic.continuous = false;
+      mic.lang = "en-US";
+      mic.interimResults = false;
+      mic.maxAlternatives = 1;
+
+      voiceBtn.addEventListener("click", () => mic.start());
+
+      mic.onresult = (event) => {
+        input.value = event.results[0][0].transcript;
+        form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+      };
+
+      mic.onerror = (event) => {
+        console.error("Voice error", event.error);
+      };
+    } else {
+      voiceBtn.disabled = true;
+      voiceBtn.title = "Voice not supported";
+    }
+  </script>
+</body>
+</html>

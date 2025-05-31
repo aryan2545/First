@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+    <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chatbot</title>
+
+
+  <style>
+    body,html {
+        height:100%;
+        margin:0;
+    }
+    .center {
+        display:flex;
+        justify-content:center;
+        align-items:center;
+        height:100vh;
+    }
+    .button-link {
+        text-decoration:none;
+        padding:12px 24px;
+        background-color:#4f46e5;
+        color:white;
+        font-size:18px;
+        border-radius:8px;
+        font-weight:bold;
+        transition:background 0.3s ease ,transform0.2s ease;
+    }
+    .button-link:hover {
+        background-color:#4338ca;
+        transform: translateY(-2px);
+    }
+    .button-link:active{
+        transform: scale(0.97)
+    }
+  </style>
+
+    </head>
+
+    <body>
+        <div class='center'>
+            <a href="{% url 'index' %}" class='button-link'>Start chat</a>
+        </div>
+    </body>
+
+</html>
