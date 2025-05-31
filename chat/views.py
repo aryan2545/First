@@ -16,7 +16,8 @@ def chat_view(request):
         message = request.POST.get("message")
         try:
             response = model.generate_content(message)
-            return JsonResponse({"response": response.text})
+            # Return key 'content' to match frontend expectation
+            return JsonResponse({"content": response.text})
         except Exception as e:
-            return JsonResponse({"response": str(e)})
+            return JsonResponse({"content": f"Error: {str(e)}"})
     return JsonResponse({"error": "Invalid request"}, status=400)
