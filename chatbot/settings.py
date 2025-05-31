@@ -9,18 +9,23 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
-import os
 from pathlib import Path
 
+# Define BASE_DIR first
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Then define static paths
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_ROOT = BASE_DIR / 'staticfiles'  # This is a Path object
+
+# If you want STATIC_ROOT as a string, do:
+# STATIC_ROOT = str(BASE_DIR / 'staticfiles')
+
 
 # Api key 
 API ='AIzaSyCzjfco6Y6U6350Gx8__T1lpeMLeyTzS-c'
 MODEL ='gemini-2.0-flash'
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 # Quick-start development settings - unsuitable for production
