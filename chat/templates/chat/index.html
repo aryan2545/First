@@ -285,7 +285,7 @@
   const voiceBtn = document.getElementById("voice-btn");
   const themeToggle = document.getElementById("theme-toggle");
 
-  // Format Gemini/ChatGPT style Markdown to HTML
+  // Format Gemini/ChatGPT style Markdown to HTML (basic)
   function formatBotResponse(text) {
     return text
       .replace(/```([^`]*)```/gs, (_, code) => `<pre>${code.trim()}</pre>`)
@@ -294,7 +294,7 @@
       .replace(/`([^`]+)`/g, "<code>$1</code>");
   }
 
-  // Append message bubble to chat
+  // Append message bubble to chat container
   function appendMessage(text, isUser = true) {
     const bubble = document.createElement("div");
     bubble.className = `message ${isUser ? "user-message" : "bot-message"}`;
@@ -322,7 +322,7 @@
     container.scrollTop = container.scrollHeight;
   }
 
-  // Append "typing" indicator bubble
+  // Append "Bot is typing..." indicator with animated dots
   function appendTyping() {
     const typingBubble = document.createElement("div");
     typingBubble.className = "message typing bot-message";
@@ -339,13 +339,13 @@
     return { typingBubble, interval };
   }
 
-  // Remove typing bubble
+  // Remove typing bubble and stop animation interval
   function removeTyping(typingBubble, interval) {
     clearInterval(interval);
     if (typingBubble.parentNode) typingBubble.parentNode.removeChild(typingBubble);
   }
 
-  // Send message on form submit
+  // Send message handler
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     const message = input.value.trim();
@@ -379,7 +379,97 @@
       clearTimeout(timeout);
 
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-      const
+      const data = await res.json();
+
+      if (data && data.content) {
+        appendMessage(data.content, false);
+      } else {
+        appendMessage("Error: No response from server.", false);
+      }
+    } catch (error) {
+      if (!timeoutReached) {
+        removeTyping(typingBubble, interval);
+        appendMessage("Error: " + error.message, false);
+      }
+    }
+  });
+
+  // Voice recognition
+  let recognition;
+  let recognizing = false;
+
+  if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = "en-US";
+
+    recognition.onstart = () => {
+      recognizing = true;
+      voiceBtn.classList.add("recording");
+      voiceBtn.textContent = "🎙️ Listening...";
+      input.focus();
+    };
+
+    recognition.onend = () => {
+      recognizing = false;
+      voiceBtn.classList.remove("recording");
+      voiceBtn.textContent = "🎤";
+    };
+
+    recognition.onerror = (event) => {
+      recognizing = false;
+      voiceBtn.classList.remove("recording");
+      voiceBtn.textContent = "🎤";
+      alert("Speech recognition error: " + event.error);
+    };
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript.trim();
+      input.value = transcript;
+      input.focus();
+      // Auto-submit after recognition
+      form.requestSubmit();
+    };
+  } else {
+    voiceBtn.style.display = "none";
+  }
+
+  voiceBtn.addEventListener("click", () => {
+    if (recognizing) {
+      recognition.stop();
+      recognizing = false;
+    } else {
+      recognition.start();
+    }
+  });
+
+  // Theme toggle (Light / Dark)
+  function updateThemeButton() {
+    if (document.body.classList.contains("dark-mode")) {
+      themeToggle.textContent = "Dark Mode";
+      themeToggle.setAttribute("aria-pressed", "true");
+    } else {
+      themeToggle.textContent = "Light Mode";
+      themeToggle.setAttribute("aria-pressed", "false");
+    }
+  }
+
+  themeToggle.addEventListener("click", () => {
+    document.body.classList.toggle("dark-mode");
+    updateThemeButton();
+  });
+
+  // Initialize theme toggle button text
+  updateThemeButton();
+
+  // Auto-scroll chat container on window resize or new message
+  window.addEventListener("resize", () => {
+    container.scrollTop = container.scrollHeight;
+  });
+
+</script>
 
 </body>
 </html>
