@@ -12,6 +12,9 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
 # Api key 
 API ='AIzaSyCzjfco6Y6U6350Gx8__T1lpeMLeyTzS-c'
 MODEL ='gemini-2.0-flash'
@@ -45,6 +48,8 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
